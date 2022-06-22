@@ -1,3 +1,8 @@
+"""
+This module contains helper functions for ingestion of data.
+Running this standalone downloads the housing data and stores preprocessed copies of it in the specified folders.
+"""
+
 import argparse
 import os
 import tarfile
@@ -18,6 +23,14 @@ imputer = SimpleImputer(strategy="median")
 
 
 def fetch_housing_data(housing_url=HOUSING_URL, housing_path=HOUSING_PATH):
+    """Function to download and extract housing data.
+    Parameters
+    ----------
+    housing_url : str
+        Url to download the housing data from.
+    housing_path : str
+        Path to store the raw csv files after extraction.
+    """
     os.makedirs(housing_path, exist_ok=True)
     tgz_path = os.path.join(housing_path, "housing.tgz")
     urllib.request.urlretrieve(housing_url, tgz_path)
@@ -44,6 +57,16 @@ def train_test(housing):
         bins=[0.0, 1.5, 3.0, 4.5, 6.0, np.inf],
         labels=[1, 2, 3, 4, 5],
     )
+    """Does stratified shuffle split on "income_cat" attribute of housing data.
+    Parameters
+    ----------
+    base_df : pd.DataFrame
+        The dataframe to be split.
+    Returns
+    -------
+    tuple[pd.DataFrame, pd.DataFrame]
+        [train_dataset, test_dataset]
+    """
 
     split = StratifiedShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
     for train_index, test_index in split.split(housing, housing["income_cat"]):
@@ -74,6 +97,19 @@ def train_test(housing):
 
 def preprocess(strat_train_set):
     housing = strat_train_set.copy()
+    """Preprocesses the given dataframe. Imputes missing values with median.
+    Replaces categorical column "ocean_proximity" with onehot dummy variables.
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Dataframe to preprocess.
+   
+    Returns
+    -------
+    tuple[pd.DataFrame, pd.Series]
+        Index 0 is the preprocessed dataframe.
+        Index 1 is the processed series
+    """
 
     corr_matrix = housing.corr()
     corr_matrix["median_house_value"].sort_values(ascending=False)
@@ -108,6 +144,17 @@ def preprocess(strat_train_set):
 
 
 def parse_args():
+    """Commandline argument parser for standalone run.
+    Returns
+    -------
+    arparse.Namespace
+        Commandline arguments. Contains keys: ["raw": str,
+         "processed": str,
+         "log_level": str,
+         "no_console_log": bool,
+         "log_path": str]
+    """
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--datapath",
@@ -128,11 +175,21 @@ def parse_args():
 
 
 def get_path():
+    # gets the current working directory
     path_parent = os.getcwd()
     while os.path.basename(os.getcwd()) != "mle-training":
         path_parent = os.path.dirname(os.getcwd())
         os.chdir(path_parent)
     return os.getcwd() + "/"
+
+
+def save_preprocessed(train_X, train_y, test_X, test_y, processed):
+    """To save the data in train and test
+    data in data folder proecssed file"""
+    train_X.to_csv(os.path.join(processed, "train_X.csv"), index=False)
+    train_y.to_csv(os.path.join(processed, "train_y.csv"), index=False)
+    test_X.to_csv(os.path.join(processed, "test_X.csv"), index=False)
+    test_y.to_csv(os.path.join(processed, "test_y.csv"), index=False)
 
 
 if __name__ == "__main__":
@@ -157,8 +214,5 @@ if __name__ == "__main__":
     processed = parent_path + args.dataprocessed
     if not os.path.exists(processed):
         os.makedirs(processed)
-    train_X.to_csv(os.path.join(processed, "train_X.csv"), index=False)
-    train_y.to_csv(os.path.join(processed, "train_y.csv"), index=False)
-    test_X.to_csv(os.path.join(processed, "test_X.csv"), index=False)
-    test_y.to_csv(os.path.join(processed, "test_y.csv"), index=False)
+    save_preprocessed(train_X, train_y, test_X, test_y, processed)
     logger.debug(f"Preprocessed train and test datasets stored at {processed}.")
