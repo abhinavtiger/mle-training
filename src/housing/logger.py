@@ -1,5 +1,8 @@
 import logging
 import logging.config
+# Logging Config
+# More on Logging Configuration
+# Setting up a config
 
 LOGGING_DEFAULT_CONFIG = {
     "version": 1,
@@ -18,6 +21,26 @@ LOGGING_DEFAULT_CONFIG = {
 def configure_logger(
     logger=None, cfg=None, log_file=None, console=True, log_level="DEBUG"
 ):
+
+    """Function to setup configurations of logger through function.
+    The individual arguments of `log_file`, `console`, `log_level` will overwrite the ones in cfg.
+    Parameters
+    ----------
+            logger:
+                    Predefined logger object if present. If None a ew logger object will be created from root.
+            cfg: dict()
+                    Configuration of the logging to be implemented by default
+            log_file: str
+                    Path to the log file for logs to be stored
+            console: bool
+                    To include a console handler(logs printing in console)
+            log_level: str
+                    One of `["INFO","DEBUG","WARNING","ERROR","CRITICAL"]`
+                    default - `"DEBUG"`
+    Returns
+    -------
+    logging.Logger
+    """
     if not cfg:
         logging.config.dictConfig(LOGGING_DEFAULT_CONFIG)
     else:
